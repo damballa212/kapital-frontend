@@ -4,7 +4,7 @@ import { I } from '../icons.jsx'
 import {
   fmtUSD as fU, fmtGs as fG, fmtDate as fD,
   downloadExport, fetchExportPreview, fetchExportPresets, saveExportPreset, deleteExportPreset,
-  COLABS,
+  fetchCollaborators,
 } from '../api.js'
 import { getDatePresets } from '../utils/datePresets.js'
 
@@ -43,12 +43,16 @@ function Reports() {
   const [preview,        setPreview]        = React.useState(null);
   const [previewLoading, setPreviewLoading] = React.useState(false);
   const [presets,      setPresets]      = React.useState([]);
+  const [collabs,      setCollabs]      = React.useState([]);
   const [saveModal,    setSaveModal]    = React.useState(false);
   const [presetName,   setPresetName]   = React.useState("");
   const [savingPreset, setSavingPreset] = React.useState(false);
 
   React.useEffect(() => {
     fetchExportPresets().then(setPresets).catch(() => {});
+    fetchCollaborators()
+      .then(res => setCollabs(Array.isArray(res) ? res : (res.data || [])))
+      .catch(() => {});
   }, []);
 
   React.useEffect(() => {
@@ -165,7 +169,7 @@ function Reports() {
                 <label className="field-label">Colaborador</label>
                 <select className="select" value={colab} onChange={e=>setColab(e.target.value)}>
                   <option value="">Todos</option>
-                  {COLABS.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                  {collabs.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                 </select>
               </div>
               <div className="field">

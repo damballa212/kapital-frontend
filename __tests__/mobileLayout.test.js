@@ -49,6 +49,19 @@ describe('mobile layout safeguards', () => {
     expect(reports).not.toContain('position:"sticky"')
   })
 
+  it('loads report collaborator filters from the API instead of hardcoded COLABS', () => {
+    const reports = read('screens/reports.jsx')
+    expect(reports).toContain('fetchCollaborators')
+    expect(reports).not.toMatch(/COLABS\s*,/)
+    expect(reports).not.toContain('COLABS.map')
+  })
+
+  it('labels HOY and YO WhatsApp command types in the inbox', () => {
+    const bot = read('screens/bot-whatsapp.jsx')
+    expect(bot).toContain('HOY: "Resumen hoy"')
+    expect(bot).toContain('YO: "Resumen yo"')
+  })
+
   it('uses mobile-native dashboard layout classes instead of fixed split grids', () => {
     const dashboard = read('screens/dashboard.jsx')
     expect(dashboard).toContain('dashboard-overview-grid')

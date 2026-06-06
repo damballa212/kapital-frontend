@@ -18,6 +18,8 @@ const STATUS_META = {
 const TYPE_LABELS = {
   TRANSACCION: "Transacción",
   TASA: "Tasa",
+  HOY: "Resumen hoy",
+  YO: "Resumen yo",
   ERROR: "Error",
   AYUDA: "Ayuda",
 };
