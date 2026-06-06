@@ -954,20 +954,22 @@ body {
 .msg-timeline {
   display: flex;
   flex-direction: column;
-  gap: 0;
   border-left: 2px solid var(--border);
-  margin-left: 8px;
-  padding-left: 0;
+  margin-left: 5px;
 }
 .msg-timeline-step {
-  display: grid;
-  grid-template-columns: 20px 1fr auto;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 0 8px 14px;
-  font-size: 13px;
-  margin-left: -1px;
-  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  margin-left: -7px;
+  padding: 5px 0;
+}
+.msg-timeline-pin {
+  width: 14px;
+  padding-top: 3px;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
 }
 .msg-timeline-dot {
   width: 10px;
@@ -975,16 +977,35 @@ body {
   border-radius: 50%;
   background: var(--text-dim);
   border: 2px solid var(--bg);
-  position: absolute;
-  left: -6px;
+  flex-shrink: 0;
+}
+.msg-timeline-body {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 4px 0 10px;
+  flex: 1;
+  min-width: 0;
+}
+.msg-timeline-text {
+  font-size: 13px;
+  line-height: 1.4;
+  flex: 1;
+  min-width: 0;
+}
+.msg-timeline-time {
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  font-family: var(--font-mono);
   flex-shrink: 0;
 }
 .msg-timeline-step.ok .msg-timeline-dot { background: var(--accent); }
 .msg-timeline-step.error .msg-timeline-dot { background: var(--danger); }
 .msg-timeline-step.ok .msg-timeline-text { color: var(--text); }
-.msg-timeline-step.error .msg-timeline-text { color: var(--danger); }
+.msg-timeline-step.error .msg-timeline-text { color: var(--danger); font-weight: 500; }
 .msg-timeline-step.neutral .msg-timeline-text { color: var(--text-muted); }
-.msg-timeline-time { flex-shrink: 0; }
 
 .msg-detail-error {
   margin-top: 16px;

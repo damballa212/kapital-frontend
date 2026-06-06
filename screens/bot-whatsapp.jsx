@@ -49,6 +49,8 @@ function safeParseDetails(d) {
 function stageLabel(stage, status, details) {
   const d = safeParseDetails(details)
   if (stage === 'parsed') {
+    // ERROR type = comando #AYUDA (intencional), no es un error real de parseo
+    if (d?.type === 'ERROR') return { text: 'Solicitud de ayuda recibida', ok: true }
     if (status === 'failed' || status === 'skipped') return { text: "No se pudo interpretar el mensaje", ok: false }
     const tipo = TYPE_LABELS[d?.type] || d?.type || ''
     return { text: `Identificado como ${tipo.toLowerCase()}`, ok: true }
@@ -173,11 +175,16 @@ function MessageDetail({ message, detail, loading }) {
       <div className="msg-timeline">
         {events.map(ev => {
           const label = stageLabel(ev.stage, ev.status, ev.details)
+          const tone = label.ok === false ? "error" : label.ok === true ? "ok" : "neutral"
           return (
-            <div key={ev.id} className={`msg-timeline-step ${label.ok === false ? "error" : label.ok === true ? "ok" : "neutral"}`}>
-              <span className="msg-timeline-dot"/>
-              <span className="msg-timeline-text">{label.text}</span>
-              <span className="muted tiny mono msg-timeline-time">{new Date(ev.createdAt).toTimeString().slice(0, 5)}</span>
+            <div key={ev.id} className={`msg-timeline-step ${tone}`}>
+              <div className="msg-timeline-pin">
+                <span className="msg-timeline-dot"/>
+              </div>
+              <div className="msg-timeline-body">
+                <span className="msg-timeline-text">{label.text}</span>
+                <span className="msg-timeline-time">{new Date(ev.createdAt).toTimeString().slice(0, 5)}</span>
+              </div>
             </div>
           )
         })}
