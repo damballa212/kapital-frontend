@@ -32,6 +32,10 @@ async function getToken() {
 
 // ── Fetch wrapper ─────────────────────────────────────────────────────────────
 async function apiFetch(path, opts = {}) {
+  if (!API_BASE_URL) {
+    throw new Error("Falta configurar VITE_API_BASE_URL en el build del frontend");
+  }
+
   const token = await getToken();
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...opts,

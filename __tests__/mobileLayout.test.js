@@ -62,6 +62,26 @@ describe('mobile layout safeguards', () => {
     expect(bot).toContain('YO: "Resumen yo"')
   })
 
+  it('keeps Firebase production config as a fallback when CI secrets are absent', () => {
+    const config = read('config.js')
+    expect(config).toContain('FIREBASE_HOSTING_CONFIG')
+    expect(config).toContain('kapital-app-prod.firebaseapp.com')
+    expect(config).toContain('AIzaSyAXH20HY1VDhyLTmohMsKp4n6utSeUEn98')
+    expect(config).toMatch(/VITE_FIREBASE_API_KEY\s*\|\|\s*FIREBASE_HOSTING_CONFIG\.apiKey/)
+  })
+
+  it('fails API calls explicitly when VITE_API_BASE_URL is missing', () => {
+    const api = read('api.js')
+    expect(api).toContain('Falta configurar VITE_API_BASE_URL')
+    expect(api).toMatch(/if\s*\(!API_BASE_URL\)/)
+  })
+
+  it('passes Vite build env values through the deploy workflow', () => {
+    const workflow = read('.github/workflows/deploy.yml')
+    expect(workflow).toContain('VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}')
+    expect(workflow).toContain('VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}')
+  })
+
   it('uses mobile-native dashboard layout classes instead of fixed split grids', () => {
     const dashboard = read('screens/dashboard.jsx')
     expect(dashboard).toContain('dashboard-overview-grid')
