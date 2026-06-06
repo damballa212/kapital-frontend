@@ -76,9 +76,13 @@ body {
   flex-direction: column;
   padding: 18px 14px;
   gap: 22px;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  width: 240px;
   height: 100vh;
+  overflow-y: auto;
+  z-index: 10;
 }
 .brand {
   display: flex;
