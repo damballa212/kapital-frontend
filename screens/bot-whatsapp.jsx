@@ -1,229 +1,212 @@
 // ===== Kontigo · WhatsApp inbox =====
 import React from 'react'
 import { I } from '../icons.jsx'
-import { fetchWebhookMessages, fetchWebhookMessage, fmtDate } from '../api.js'
+import { fetchConversations, fetchWebhookMessages, fmtDate } from '../api.js'
 
 const STATUS_META = {
-  received: { label: "Recibido", tone: "" },
-  ignored_group: { label: "Ignorado", tone: "" },
-  rate_limited: { label: "Limitado", tone: "danger" },
-  parse_error: { label: "No entendido", tone: "danger" },
-  rate_updated: { label: "Tasa", tone: "green" },
-  transaction_created: { label: "TX creada", tone: "green" },
-  confirmation_sent: { label: "Completado", tone: "green" },
+  received:            { label: "Recibido",      tone: "" },
+  ignored_group:       { label: "Grupo",         tone: "" },
+  ignored_duplicate:   { label: "Duplicado",     tone: "" },
+  rate_limited:        { label: "Limitado",      tone: "danger" },
+  parse_error:         { label: "No entendido",  tone: "danger" },
+  rate_updated:        { label: "Tasa",          tone: "green" },
+  transaction_created: { label: "TX creada",     tone: "green" },
+  confirmation_sent:   { label: "Enviado",       tone: "green" },
   confirmation_failed: { label: "Sin confirmar", tone: "danger" },
-  failed: { label: "Falló", tone: "danger" },
-};
+  failed:              { label: "Falló",         tone: "danger" },
+}
 
 const TYPE_LABELS = {
   TRANSACCION: "Transacción",
-  TASA: "Tasa",
-  HOY: "Resumen hoy",
-  YO: "Resumen yo",
-  ERROR: "Error",
-  AYUDA: "Ayuda",
-};
-
-const INBOX_FILTERS = [
-  { id: "", label: "Todos" },
-  { id: "parse_error", label: "No entendidos" },
-  { id: "confirmation_failed", label: "Sin confirmar" },
-  { id: "failed", label: "Fallidos" },
-  { id: "confirmation_sent", label: "Completados" },
-];
+  TASA:        "Tasa",
+  HOY:         "Resumen hoy",
+  YO:          "Resumen yo",
+  ERROR:       "Ayuda / Error",
+}
 
 function statusBadge(status) {
-  const meta = STATUS_META[status] || { label: status || "—", tone: "" };
-  return <span className={`badge ${meta.tone}`}>{meta.label}</span>;
+  const meta = STATUS_META[status] || { label: status || "—", tone: "" }
+  return <span className={`badge ${meta.tone}`}>{meta.label}</span>
 }
 
-function initialsFromMessage(message) {
-  const source = message.userName || message.chatId || "?";
-  return source.split(/[ @._-]/).filter(Boolean).map(p => p[0]).slice(0, 2).join("").toUpperCase();
+function initialsFromName(name) {
+  return (name || "?").split(/[ @._-]/).filter(Boolean).map(p => p[0]).slice(0, 2).join("").toUpperCase()
 }
 
-function MessageRow({ message, active, onSelect }) {
-  const time = new Date(message.receivedAt).toTimeString().slice(0, 5);
-  const sender = message.userName || "Sin nombre";
-  const preview = message.errorMessage || message.content;
+function formatPhone(chatId) {
+  return chatId?.replace("@s.whatsapp.net", "").replace("@g.us", " (grupo)") || chatId
+}
+
+// ─── Conversation list item ────────────────────────────────────────────────
+
+function ConversationRow({ conv, active, onSelect }) {
+  const time = new Date(conv.lastActivity).toTimeString().slice(0, 5)
+  const name = conv.userName || formatPhone(conv.chatId)
+  const initials = initialsFromName(name)
+  const lastMeta = STATUS_META[conv.lastStatus] || { tone: "" }
 
   return (
-    <button className={`inbox-row ${active ? "active" : ""}`} onClick={() => onSelect(message)}>
-      <span className="avatar inbox-avatar">{initialsFromMessage(message)}</span>
+    <button className={`inbox-row ${active ? "active" : ""}`} onClick={() => onSelect(conv)}>
+      <span className="avatar inbox-avatar">{initials}</span>
       <span className="inbox-row-main">
-        <span className="row between" style={{gap:8}}>
-          <span className="inbox-sender">{sender}</span>
+        <span className="row between" style={{gap: 8}}>
+          <span className="inbox-sender">{name}</span>
           <span className="muted tiny mono">{time}</span>
         </span>
-        <span className="inbox-preview">{preview}</span>
-        <span className="row" style={{gap:6, marginTop:7}}>
-          {statusBadge(message.status)}
-          <span className="badge">{TYPE_LABELS[message.parsedType] || "Entrada"}</span>
-          {message.transactionId && <span className="badge mono">TX-{message.transactionId}</span>}
+        <span className="inbox-preview">{conv.lastContent}</span>
+        <span className="row" style={{gap: 6, marginTop: 7}}>
+          <span className="badge">{conv.totalMessages} msg</span>
+          {conv.failedCount > 0 && <span className="badge danger">{conv.failedCount} error</span>}
+          {conv.successCount > 0 && <span className="badge green">{conv.successCount} ok</span>}
         </span>
       </span>
     </button>
-  );
+  )
 }
 
-function Timeline({ events }) {
-  if (!events?.length) {
-    return <div className="muted tiny" style={{padding:14}}>Sin eventos registrados.</div>;
+// ─── Message bubble in thread ──────────────────────────────────────────────
+
+function MessageBubble({ message }) {
+  const time = fmtDate(message.receivedAt, true)
+  const typeMeta = TYPE_LABELS[message.parsedType]
+  const isError = ["failed", "confirmation_failed", "parse_error", "rate_limited"].includes(message.status)
+
+  // Extract clean error text
+  let errorText = message.errorMessage
+  if (errorText) {
+    // Try to extract just the Evolution API status line
+    const match = errorText.match(/Evolution API error (\d+)/)
+    if (match) errorText = `Sin respuesta por WhatsApp (Evolution API ${match[1]})`
   }
 
   return (
-    <div className="inbox-timeline">
-      {events.map(ev => (
-        <div key={ev.id} className="inbox-event">
-          <span className={`inbox-event-dot ${ev.status}`}/>
-          <div>
-            <div className="row between" style={{gap:12}}>
-              <span style={{fontWeight:500}}>{ev.stage}</span>
-              <span className="muted tiny mono">{fmtDate(ev.createdAt, true)}</span>
-            </div>
-            {ev.details && Object.keys(ev.details).length > 0 && (
-              <pre className="inbox-json">{JSON.stringify(ev.details, null, 2)}</pre>
-            )}
-          </div>
+    <div className="msg-bubble-wrap">
+      <div className="msg-bubble">
+        <div className="msg-content">{message.content}</div>
+        <div className="msg-meta">
+          <span className="muted tiny mono">{time}</span>
         </div>
-      ))}
+      </div>
+
+      <div className="msg-tags">
+        {statusBadge(message.status)}
+        {typeMeta && <span className="badge">{typeMeta}</span>}
+        {message.transactionId && (
+          <span className="badge mono">TX-{message.transactionId}</span>
+        )}
+        {message.durationMs != null && (
+          <span className="muted tiny">{Math.round(message.durationMs)} ms</span>
+        )}
+      </div>
+
+      {isError && errorText && (
+        <div className="msg-error">{errorText}</div>
+      )}
     </div>
-  );
+  )
 }
 
-function InboxDetail({ selected, detail, loading, error }) {
-  if (!selected) {
+// ─── Thread (right panel) ─────────────────────────────────────────────────
+
+function ConversationThread({ conv, messages, loading, error }) {
+  if (!conv) {
     return (
       <div className="inbox-empty">
         <I.WhatsApp width="28" height="28"/>
-        <div>Seleccioná un mensaje</div>
-        <span className="muted tiny">El detalle del flujo aparece aquí.</span>
+        <div>Seleccioná un contacto</div>
+        <span className="muted tiny">Los mensajes aparecen aquí.</span>
       </div>
-    );
+    )
   }
 
-  if (loading) {
-    return <div className="inbox-empty">Cargando mensaje…</div>;
-  }
-
-  if (error) {
-    return (
-      <div className="inbox-empty" style={{color:"var(--danger)"}}>
-        {error}
-      </div>
-    );
-  }
-
-  const message = detail?.message || selected;
+  const name = conv.userName || formatPhone(conv.chatId)
+  const phone = formatPhone(conv.chatId)
 
   return (
-    <div className="inbox-detail">
+    <div className="inbox-thread">
       <div className="inbox-detail-head">
-        <div className="row" style={{gap:10, minWidth:0}}>
-          <span className="avatar">{initialsFromMessage(message)}</span>
-          <div style={{minWidth:0}}>
-            <div style={{fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis"}}>
-              {message.userName || "Sin nombre"}
-            </div>
-            <div className="muted tiny mono" style={{whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis"}}>
-              {message.chatId}
-            </div>
+        <div className="row" style={{gap: 10, minWidth: 0}}>
+          <span className="avatar">{initialsFromName(name)}</span>
+          <div style={{minWidth: 0}}>
+            <div style={{fontWeight: 600}}>{name}</div>
+            <div className="muted tiny mono">{phone}</div>
           </div>
         </div>
-        {statusBadge(message.status)}
+        <span className="muted tiny">{conv.totalMessages} mensajes</span>
       </div>
 
-      <div className="inbox-message-bubble">
-        <div style={{whiteSpace:"pre-wrap", lineHeight:1.45}}>{message.content}</div>
-        <div className="muted tiny mono" style={{marginTop:10}}>{fmtDate(message.receivedAt, true)}</div>
+      <div className="inbox-thread-scroll">
+        {loading && <div className="inbox-empty" style={{padding: 24}}>Cargando…</div>}
+        {!loading && error && <div className="inbox-empty" style={{color: "var(--danger)", padding: 24}}>{error}</div>}
+        {!loading && !error && messages.length === 0 && (
+          <div className="inbox-empty" style={{padding: 24}}>Sin mensajes en el período.</div>
+        )}
+        {!loading && messages.slice().reverse().map(m => (
+          <MessageBubble key={m.id} message={m}/>
+        ))}
       </div>
-
-      <div className="inbox-detail-grid">
-        <div><span className="muted tiny">Tipo</span><strong>{TYPE_LABELS[message.parsedType] || "Entrada"}</strong></div>
-        <div><span className="muted tiny">Etapa</span><strong>{message.flowStage}</strong></div>
-        <div><span className="muted tiny">Duración</span><strong>{message.durationMs ? `${Math.round(message.durationMs)} ms` : "—"}</strong></div>
-        <div><span className="muted tiny">Transacción</span><strong>{message.transactionId ? `TX-${message.transactionId}` : "—"}</strong></div>
-      </div>
-
-      {message.errorMessage && (
-        <div className="inbox-error">
-          {message.errorMessage}
-        </div>
-      )}
-
-      <div className="inbox-section-title">Flujo</div>
-      <Timeline events={detail?.events || []}/>
     </div>
-  );
+  )
 }
 
-function BotWhatsApp() {
-  const today = new Date().toISOString().split("T")[0];
-  const sevenDaysAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-  const [status, setStatus] = React.useState("");
-  const [q, setQ] = React.useState("");
-  const [dateFrom] = React.useState(sevenDaysAgo);
-  const [dateTo] = React.useState(today);
-  const [page, setPage] = React.useState(1);
-  const [refreshKey, setRefreshKey] = React.useState(0);
-  const [result, setResult] = React.useState(null);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState(null);
-  const [selected, setSelected] = React.useState(null);
-  const [detail, setDetail] = React.useState(null);
-  const [detailLoading, setDetailLoading] = React.useState(false);
-  const [detailError, setDetailError] = React.useState(null);
+// ─── Main screen ──────────────────────────────────────────────────────────
 
+function BotWhatsApp({ rtKeys }) {
+  const today = new Date().toISOString().split("T")[0]
+  const sevenDaysAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+
+  const [q, setQ] = React.useState("")
+  const [refreshKey, setRefreshKey] = React.useState(0)
+
+  // Conversations list
+  const [conversations, setConversations] = React.useState([])
+  const [convsLoading, setConvsLoading] = React.useState(false)
+  const [convsError, setConvsError] = React.useState(null)
+
+  // Selected conversation + its messages
+  const [selected, setSelected] = React.useState(null)
+  const [messages, setMessages] = React.useState([])
+  const [msgsLoading, setMsgsLoading] = React.useState(false)
+  const [msgsError, setMsgsError] = React.useState(null)
+
+  // Load conversations
   React.useEffect(() => {
-    setLoading(true); setError(null);
+    setConvsLoading(true); setConvsError(null)
+    fetchConversations({ startDate: sevenDaysAgo, endDate: today, q: q || undefined })
+      .then(res => setConversations(res.data || []))
+      .catch(e => setConvsError(e.message))
+      .finally(() => setConvsLoading(false))
+  }, [q, refreshKey, rtKeys?.webhook])
+
+  // Load messages for selected conversation
+  React.useEffect(() => {
+    if (!selected) return
+    setMsgsLoading(true); setMsgsError(null); setMessages([])
     fetchWebhookMessages({
-      page,
-      limit: 50,
-      startDate: dateFrom,
-      endDate: dateTo,
-      status: status || undefined,
-      q: q || undefined,
+      chatId: selected.chatId,
+      limit: 100,
+      startDate: sevenDaysAgo,
+      endDate: today,
     })
-      .then(res => {
-        setResult(res);
-        if (!selected && res.data?.length) setSelected(res.data[0]);
-      })
-      .catch(e => {
-        setResult(null);
-        setError(e.message);
-      })
-      .finally(() => setLoading(false));
-  }, [page, status, q, refreshKey]);
+      .then(res => setMessages(res.data || []))
+      .catch(e => setMsgsError(e.message))
+      .finally(() => setMsgsLoading(false))
+  }, [selected?.chatId, refreshKey, rtKeys?.webhook])
 
-  React.useEffect(() => {
-    if (!selected) return;
-    setDetail(null); setDetailError(null); setDetailLoading(true);
-    fetchWebhookMessage(selected.id)
-      .then(setDetail)
-      .catch(e => setDetailError(e.message))
-      .finally(() => setDetailLoading(false));
-  }, [selected?.id]);
-
-  function applyStatus(nextStatus) {
-    setStatus(nextStatus);
-    setPage(1);
-  }
-
-  const messages = result?.data || [];
-  const pagination = result?.pagination;
-  const setupRequired = /pendiente de migracion|503/.test(error || "");
+  const setupRequired = /pendiente de migracion|503/.test(convsError || "")
 
   return (
     <div className="content inbox-content">
       <div className="inbox-shell">
+        {/* ── Left: conversation list ── */}
         <aside className="inbox-list">
           <div className="inbox-toolbar">
             <div className="input inbox-search">
               <I.Search width="13" height="13"/>
               <input
                 value={q}
-                onChange={e => { setQ(e.target.value); setPage(1); }}
-                placeholder="Buscar mensajes…"
+                onChange={e => setQ(e.target.value)}
+                placeholder="Buscar contacto…"
               />
             </div>
             <button className="btn icon" title="Actualizar" onClick={() => setRefreshKey(k => k + 1)}>
@@ -231,54 +214,45 @@ function BotWhatsApp() {
             </button>
           </div>
 
-          <div className="inbox-tabs">
-            {INBOX_FILTERS.map(f => (
-              <button key={f.id || "all"} className={status === f.id ? "active" : ""} onClick={() => applyStatus(f.id)}>
-                {f.label}
-              </button>
-            ))}
-          </div>
-
           {setupRequired && (
             <div className="inbox-setup">
               Falta aplicar la migración del monitor WhatsApp en la base de producción.
             </div>
           )}
-
-          {error && !setupRequired && (
-            <div className="inbox-setup" style={{color:"var(--danger)", borderColor:"var(--danger)"}}>
-              {error}
+          {convsError && !setupRequired && (
+            <div className="inbox-setup" style={{color: "var(--danger)", borderColor: "var(--danger)"}}>
+              {convsError}
             </div>
           )}
 
           <div className="inbox-list-scroll">
-            {loading && <div className="inbox-empty">Cargando mensajes…</div>}
-            {!loading && !error && messages.length === 0 && <div className="inbox-empty">Sin mensajes</div>}
-            {!loading && messages.map(m => (
-              <MessageRow
-                key={m.id}
-                message={m}
-                active={selected?.id === m.id}
-                onSelect={setSelected}
+            {convsLoading && <div className="inbox-empty">Cargando contactos…</div>}
+            {!convsLoading && !convsError && conversations.length === 0 && (
+              <div className="inbox-empty">Sin actividad en los últimos 7 días</div>
+            )}
+            {!convsLoading && conversations.map(conv => (
+              <ConversationRow
+                key={conv.chatId}
+                conv={conv}
+                active={selected?.chatId === conv.chatId}
+                onSelect={c => { setSelected(c); setMessages([]) }}
               />
             ))}
           </div>
-
-          {pagination && pagination.totalPages > 1 && (
-            <div className="inbox-pager">
-              <button className="btn" disabled={pagination.page <= 1} onClick={() => setPage(pagination.page - 1)}>Anterior</button>
-              <span className="muted tiny">Página {pagination.page}/{pagination.totalPages}</span>
-              <button className="btn" disabled={pagination.page >= pagination.totalPages} onClick={() => setPage(pagination.page + 1)}>Siguiente</button>
-            </div>
-          )}
         </aside>
 
+        {/* ── Right: thread ── */}
         <section className="inbox-reader">
-          <InboxDetail selected={selected} detail={detail} loading={detailLoading} error={detailError}/>
+          <ConversationThread
+            conv={selected}
+            messages={messages}
+            loading={msgsLoading}
+            error={msgsError}
+          />
         </section>
       </div>
     </div>
-  );
+  )
 }
 
 export default BotWhatsApp

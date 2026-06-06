@@ -2,6 +2,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import firebase from './firebase.js'
+import { API_BASE_URL } from './config.js'
 import { I } from './icons.jsx'
 import { useTweaks, TweaksPanel, TweakSection, TweakColor, TweakRadio, TweakToggle, TweakSelect } from './tweaks-panel.jsx'
 import Login from './screens/login.jsx'
@@ -166,6 +167,7 @@ function App() {
   const [user, setUser] = React.useState(null);
   const [authReady, setAuthReady] = React.useState(false);
   const [screen, setScreen] = React.useState(tweaks.startScreen || "dashboard");
+  const [rtKeys, setRtKeys] = React.useState({ tx: 0, rate: 0, webhook: 0 });
 
   React.useEffect(() => {
     const unsub = firebase.auth().onAuthStateChanged(u => {
@@ -185,6 +187,38 @@ function App() {
     const palette = Array.isArray(acc) ? acc : (ACCENT_PRESETS.find(p => p[0] === acc) || ACCENT_PRESETS[0]);
     applyAccent(palette);
   }, [tweaks.accent]);
+
+  React.useEffect(() => {
+    if (!user) return;
+    let es = null;
+    let retryTimer = null;
+
+    async function connect() {
+      try {
+        const token = await user.getIdToken();
+        es = new EventSource(`${API_BASE_URL}/realtime/events?token=${encodeURIComponent(token)}`);
+        es.onmessage = (e) => {
+          try {
+            const ev = JSON.parse(e.data);
+            if (ev.type === 'transaction.created' || ev.type === 'transaction.deleted') {
+              setRtKeys(k => ({ ...k, tx: k.tx + 1 }));
+            } else if (ev.type === 'rate.updated') {
+              setRtKeys(k => ({ ...k, rate: k.rate + 1 }));
+            } else if (ev.type.startsWith('webhook.')) {
+              setRtKeys(k => ({ ...k, webhook: k.webhook + 1 }));
+            }
+          } catch {}
+        };
+        es.onerror = () => {
+          es?.close();
+          retryTimer = setTimeout(connect, 5000);
+        };
+      } catch {}
+    }
+
+    connect();
+    return () => { es?.close(); clearTimeout(retryTimer); };
+  }, [user]);
 
   async function handleLogout() {
     await firebase.auth().signOut();
@@ -251,7 +285,7 @@ function App() {
             </div>
           </header>
           <ErrorBoundary key={screen}>
-            <Screen user={user}/>
+            <Screen user={user} rtKeys={rtKeys}/>
           </ErrorBoundary>
         </main>
         <MobileTabs screen={screen} setScreen={setScreen}/>

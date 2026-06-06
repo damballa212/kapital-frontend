@@ -48,7 +48,7 @@ function BarChart({ daily }) {
   );
 }
 
-function Dashboard() {
+function Dashboard({ rtKeys }) {
   const [data, setData] = React.useState(null);
   const [error, setError] = React.useState(null);
 
@@ -57,7 +57,7 @@ function Dashboard() {
     fetchDashboard(now.getFullYear(), now.getMonth() + 1)
       .then(setData)
       .catch(e => setError(e.message));
-  }, []);
+  }, [rtKeys?.tx, rtKeys?.rate]);
 
   if (error) return (
     <div className="content">

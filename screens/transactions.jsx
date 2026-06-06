@@ -120,7 +120,7 @@ function TxDetail({ tx, onClose, onDelete }) {
   );
 }
 
-function Transactions() {
+function Transactions({ rtKeys }) {
   const [selected, setSelected] = React.useState(null);
   const [collabs, setCollabs] = React.useState([]);
   const [colabFilter, setColabFilter] = React.useState("");
@@ -173,7 +173,7 @@ function Transactions() {
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
-  }, [applied]);
+  }, [applied, rtKeys?.tx]);
 
   function goToPage(p) {
     setApplied(prev => ({ ...prev, page: p }));

@@ -74,13 +74,22 @@ export async function fetchTransactions({ page = 1, limit = 50, startDate, endDa
   return apiJSON(`/transactions?${params}`);
 }
 
-export async function fetchWebhookMessages({ page = 1, limit = 50, startDate, endDate, status, parsedType, q } = {}) {
+export async function fetchConversations({ startDate, endDate, q } = {}) {
+  const params = new URLSearchParams();
+  if (startDate) params.set("startDate", startDate);
+  if (endDate) params.set("endDate", endDate);
+  if (q) params.set("q", q);
+  return apiJSON(`/webhook/conversations?${params}`);
+}
+
+export async function fetchWebhookMessages({ page = 1, limit = 50, startDate, endDate, status, parsedType, q, chatId } = {}) {
   const params = new URLSearchParams({ page, limit });
   if (startDate) params.set("startDate", startDate);
   if (endDate) params.set("endDate", endDate);
   if (status) params.set("status", status);
   if (parsedType) params.set("parsedType", parsedType);
   if (q) params.set("q", q);
+  if (chatId) params.set("chatId", chatId);
   return apiJSON(`/webhook/messages?${params}`);
 }
 
