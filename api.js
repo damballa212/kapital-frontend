@@ -170,26 +170,21 @@ export async function downloadExport({ format, startDate, endDate, colaborador, 
 
 // ── Map backend Transaction → shape usada por el frontend ────────────────────
 export function mapTransaction(t) {
-  const colabLower = (t.colaborador || "gabriel").toLowerCase();
-  let colabId = "gabriel";
-  if (colabLower.includes("patty") || colabLower.includes("paty")) colabId = "patty";
-  else if (colabLower.includes("anael") || colabLower.includes("anel")) colabId = "anael";
-
+  const colabName = t.colaborador || "Gabriel Zambrano";
+  const isOwner = colabName.toLowerCase().includes("gabriel");
   return {
     id: `TX-${t.id}`,
     rawId: t.id,
     fecha: t.fecha,
     cliente: t.cliente,
-    colab: colabId,
-    colabName: t.colaborador || "Gabriel Zambrano",
+    colabName,
     usd: Number(t.usdTotal),
     comPct: Number(t.comision),
     neto: Number(t.usdNeto),
     gs: Number(t.montoGs),
     tasa: Number(t.tasaUsada),
     comGabriel: Number(t.montoComisionGabrielUsd),
-    comAnael: colabId === "anael" ? Number(t.montoColaboradorUsd) : null,
-    comPatty: colabId === "patty" ? Number(t.montoColaboradorUsd) : null,
+    comColab: !isOwner ? Number(t.montoColaboradorUsd) : null,
   };
 }
 

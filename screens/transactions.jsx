@@ -1,13 +1,13 @@
 // ===== Kapital · Transactions screen =====
 import React from 'react'
 import { I } from '../icons.jsx'
-import { fetchTransactions, mapTransaction, deleteTransaction, fmtUSD as fU, fmtGs as fG, fmtDate as fD, colabBy as cBy, COLABS } from '../api.js'
+import { fetchTransactions, fetchCollaborators, mapTransaction, deleteTransaction, fmtUSD as fU, fmtGs as fG, fmtDate as fD } from '../api.js'
 
 function TxDetail({ tx, onClose, onDelete }) {
   const [confirming, setConfirming] = React.useState(false);
   const [deleting,   setDeleting]   = React.useState(false);
   if (!tx) return null;
-  const colab = cBy(tx.colab);
+  const initials = tx.colabName.split(" ").map(p=>p[0]).slice(0,2).join("");
   return (
     <>
       <div className="panel-overlay" onClick={onClose}/>
@@ -28,10 +28,8 @@ function TxDetail({ tx, onClose, onDelete }) {
             <div>
               <div className="muted tiny" style={{textAlign:"right"}}>Colaborador</div>
               <div className="row" style={{gap:8, marginTop:4}}>
-                <span className="avatar" style={{width:24,height:24,fontSize:10}}>
-                  {(tx.colabName || colab.name).split(" ").map(p=>p[0]).slice(0,2).join("")}
-                </span>
-                <span style={{fontWeight:500}}>{tx.colabName || colab.name}</span>
+                <span className="avatar" style={{width:24,height:24,fontSize:10}}>{initials}</span>
+                <span style={{fontWeight:500}}>{tx.colabName}</span>
               </div>
             </div>
           </div>
@@ -56,16 +54,10 @@ function TxDetail({ tx, onClose, onDelete }) {
 
           <div style={{marginTop:22}}>
             <div className="muted tiny" style={{textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:6}}>Distribución de comisión</div>
-            {tx.comAnael != null && tx.comAnael > 0 && (
+            {tx.comColab != null && tx.comColab > 0 && (
               <div className="kv">
-                <span className="kv-label row" style={{gap:8}}><span className="tone gold"/>Anael · colaborador</span>
-                <span className="kv-val">{fU(tx.comAnael, true)} <span className="muted">· {fG(tx.comAnael * tx.tasa)} Gs</span></span>
-              </div>
-            )}
-            {tx.comPatty != null && tx.comPatty > 0 && (
-              <div className="kv">
-                <span className="kv-label row" style={{gap:8}}><span className="tone gold"/>Patty · colaboradora</span>
-                <span className="kv-val">{fU(tx.comPatty, true)} <span className="muted">· {fG(tx.comPatty * tx.tasa)} Gs</span></span>
+                <span className="kv-label row" style={{gap:8}}><span className="tone gold"/>{tx.colabName} · colaborador</span>
+                <span className="kv-val">{fU(tx.comColab, true)} <span className="muted">· {fG(tx.comColab * tx.tasa)} Gs</span></span>
               </div>
             )}
             <div className="kv">
@@ -130,8 +122,15 @@ function TxDetail({ tx, onClose, onDelete }) {
 
 function Transactions() {
   const [selected, setSelected] = React.useState(null);
+  const [collabs, setCollabs] = React.useState([]);
   const [colabFilter, setColabFilter] = React.useState("");
   const [clientQ, setClientQ] = React.useState("");
+
+  React.useEffect(() => {
+    fetchCollaborators()
+      .then(res => setCollabs(Array.isArray(res) ? res : (res.data || [])))
+      .catch(() => {});
+  }, []);
   const [dateFrom, setDateFrom] = React.useState(() => {
     const d = new Date(); d.setDate(1);
     return d.toISOString().split("T")[0];
@@ -211,7 +210,7 @@ function Transactions() {
             <label className="field-label">Colaborador</label>
             <select className="select" value={colabFilter} onChange={e => setColabFilter(e.target.value)}>
               <option value="">Todos</option>
-              {COLABS.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+              {collabs.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
             </select>
           </div>
           <div className="field" style={{flex:1, minWidth:180}}>
@@ -272,9 +271,7 @@ function Transactions() {
               <tr><td colSpan={8} style={{textAlign:"center", padding:32, color:"var(--text-muted)"}}>Sin resultados</td></tr>
             )}
             {!loading && txs.map(t => {
-              const colab = cBy(t.colab);
-              const name = t.colabName || colab.name;
-              const initials = name.split(" ").map(p=>p[0]).slice(0,2).join("");
+              const initials = t.colabName.split(" ").map(p=>p[0]).slice(0,2).join("");
               return (
                 <tr key={t.id} onClick={() => setSelected(t)}>
                   <td className="tx-col-date">
@@ -285,7 +282,7 @@ function Transactions() {
                   <td className="tx-col-collab">
                     <div className="row" style={{gap:8}}>
                       <span className="avatar" style={{width:22,height:22,fontSize:10}}>{initials}</span>
-                      <span>{name.split(" ")[0]}</span>
+                      <span>{t.colabName.split(" ")[0]}</span>
                     </div>
                   </td>
                   <td className="num tx-col-usd">{fU(t.usd, true)}</td>

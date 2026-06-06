@@ -146,6 +146,20 @@ function ToastContainer() {
   );
 }
 
+class ErrorBoundary extends React.Component {
+  state = { error: null }
+  static getDerivedStateFromError(error) { return { error } }
+  render() {
+    if (this.state.error) return (
+      <div style={{padding:40, textAlign:"center"}}>
+        <div style={{color:"var(--danger)", marginBottom:12}}>Algo salió mal</div>
+        <button className="btn" onClick={() => this.setState({ error: null })}>Reintentar</button>
+      </div>
+    )
+    return this.props.children
+  }
+}
+
 function App() {
   const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const [theme, setTheme] = React.useState(() => localStorage.getItem("kontigo-theme") || "dark");
@@ -236,7 +250,9 @@ function App() {
               <ThemeToggle theme={theme} setTheme={setTheme}/>
             </div>
           </header>
-          <Screen user={user}/>
+          <ErrorBoundary key={screen}>
+            <Screen user={user}/>
+          </ErrorBoundary>
         </main>
         <MobileTabs screen={screen} setScreen={setScreen}/>
       </div>
