@@ -3,6 +3,9 @@ import React from 'react'
 import { I } from '../icons.jsx'
 import { fetchConversations, fetchWebhookMessages, fetchWebhookMessage, fmtDate } from '../api.js'
 
+// On mobile (≤900px) only one panel is visible at a time.
+// mobilePanel drives which one: 'list' | 'thread' | 'detail'
+
 const STATUS_META = {
   received:            { label: "Recibido",      tone: "" },
   ignored_group:       { label: "Grupo",         tone: "" },
@@ -236,6 +239,9 @@ function BotWhatsApp({ rtKeys }) {
   const [detail, setDetail] = React.useState(null)
   const [detailLoading, setDetailLoading] = React.useState(false)
 
+  // Mobile navigation: which panel is currently visible
+  const [mobilePanel, setMobilePanel] = React.useState('list')
+
   // Load conversations
   React.useEffect(() => {
     setConvsLoading(true); setConvsError(null)
@@ -270,7 +276,7 @@ function BotWhatsApp({ rtKeys }) {
       <div className="inbox-shell-3">
 
         {/* ── Panel 1: Contacts ── */}
-        <aside className="inbox-list">
+        <aside className={`inbox-list ${mobilePanel === 'list' ? 'mobile-active' : ''}`}>
           <div className="inbox-toolbar">
             <div className="input inbox-search">
               <I.Search width="13" height="13"/>
@@ -296,14 +302,14 @@ function BotWhatsApp({ rtKeys }) {
                 key={conv.chatId}
                 conv={conv}
                 active={selectedConv?.chatId === conv.chatId}
-                onSelect={c => { setSelectedConv(c); setSelectedMsg(null); setDetail(null) }}
+                onSelect={c => { setSelectedConv(c); setSelectedMsg(null); setDetail(null); setMobilePanel('thread') }}
               />
             ))}
           </div>
         </aside>
 
         {/* ── Panel 2: Thread ── */}
-        <section className="inbox-thread-panel">
+        <section className={`inbox-thread-panel ${mobilePanel === 'thread' ? 'mobile-active' : ''}`}>
           {!selectedConv ? (
             <div className="inbox-empty">
               <I.WhatsApp width="28" height="28"/>
@@ -312,9 +318,12 @@ function BotWhatsApp({ rtKeys }) {
           ) : (
             <>
               <div className="inbox-thread-header">
+                <button className="inbox-back" onClick={() => setMobilePanel('list')} title="Volver a contactos">
+                  <I.ChevronLeft width="18" height="18"/>
+                </button>
                 <span className="avatar" style={{width:30,height:30,fontSize:11}}>{initialsFromName(selectedConv.userName || formatPhone(selectedConv.chatId))}</span>
-                <div>
-                  <div style={{fontWeight:600, fontSize:13}}>{selectedConv.userName || formatPhone(selectedConv.chatId)}</div>
+                <div style={{minWidth:0}}>
+                  <div style={{fontWeight:600, fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{selectedConv.userName || formatPhone(selectedConv.chatId)}</div>
                   <div className="muted tiny mono">{formatPhone(selectedConv.chatId)}</div>
                 </div>
               </div>
@@ -325,7 +334,7 @@ function BotWhatsApp({ rtKeys }) {
                     key={m.id}
                     message={m}
                     active={selectedMsg?.id === m.id}
-                    onSelect={setSelectedMsg}
+                    onSelect={msg => { setSelectedMsg(msg); setMobilePanel('detail') }}
                   />
                 ))}
               </div>
@@ -334,7 +343,15 @@ function BotWhatsApp({ rtKeys }) {
         </section>
 
         {/* ── Panel 3: Detail ── */}
-        <section className="inbox-detail-panel">
+        <section className={`inbox-detail-panel ${mobilePanel === 'detail' ? 'mobile-active' : ''}`}>
+          <div className="inbox-detail-mobile-header">
+            <button className="inbox-back" onClick={() => setMobilePanel('thread')} title="Volver al chat">
+              <I.ChevronLeft width="18" height="18"/>
+            </button>
+            <span className="inbox-detail-mobile-title">
+              {selectedMsg ? selectedMsg.content.slice(0, 40) : 'Detalle'}
+            </span>
+          </div>
           <MessageDetail message={selectedMsg} detail={detail} loading={detailLoading}/>
         </section>
 

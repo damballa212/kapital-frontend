@@ -1076,15 +1076,83 @@ body {
 .tone.gold { background: var(--gold); }
 .tone.muted { background: var(--text-dim); }
 
+/* Back button — visible only on mobile */
+.inbox-back {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  padding: 4px 2px;
+}
+.inbox-back:hover { color: var(--text); }
+
+/* Mobile detail header (back bar above detail content) */
+.inbox-detail-mobile-header {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+.inbox-detail-mobile-title {
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 1200px) {
   .inbox-shell-3 { grid-template-columns: 260px 320px minmax(0, 1fr); }
 }
+
 @media (max-width: 900px) {
-  .inbox-content { height: auto; padding-bottom: 60px; }
-  .inbox-shell { grid-template-columns: 1fr; }
-  .inbox-shell-3 { grid-template-columns: 1fr; }
-  .inbox-list { min-height: 30vh; border-right: none; border-bottom: 1px solid var(--border); }
-  .inbox-thread-panel { min-height: 40vh; border-right: none; border-bottom: 1px solid var(--border); }
-  .inbox-detail-panel { min-height: 50vh; }
+  /* Full-height container: viewport minus topbar (57px) minus bottom tab bar (60px) */
+  .inbox-content { height: calc(100vh - 57px - 60px); padding: 0; }
+
+  /* Shell becomes a plain block — one panel fills the full height */
+  .inbox-shell-3 {
+    display: block;
+    height: 100%;
+  }
+
+  /* All panels hidden by default */
+  .inbox-list,
+  .inbox-thread-panel,
+  .inbox-detail-panel {
+    display: none;
+    height: 100%;
+    border-right: none;
+    border-bottom: none;
+  }
+
+  /* Only the active panel is shown */
+  .inbox-list.mobile-active,
+  .inbox-thread-panel.mobile-active,
+  .inbox-detail-panel.mobile-active {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* Detail panel scrolls internally */
+  .inbox-detail-panel.mobile-active { overflow-y: auto; }
+
+  /* Back button visible on mobile */
+  .inbox-back { display: flex; }
+
+  /* Mobile detail header shown */
+  .inbox-detail-mobile-header { display: flex; }
+
+  /* Compact headers */
+  .inbox-thread-header { padding: 10px 12px; }
   .inbox-toolbar { padding: 10px 12px; }
 }
