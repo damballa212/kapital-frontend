@@ -4,7 +4,7 @@ import { I } from '../icons.jsx'
 import {
   fmtUSD as fU, fmtGs as fG, fmtDate as fD,
   downloadExport, fetchExportPreview, fetchExportPresets, saveExportPreset, deleteExportPreset,
-  fetchCollaborators,
+  fetchCollaborators, fetchClients,
 } from '../api.js'
 import { getDatePresets } from '../utils/datePresets.js'
 
@@ -48,6 +48,10 @@ function Reports() {
   const [presetName,   setPresetName]   = React.useState("");
   const [savingPreset, setSavingPreset] = React.useState(false);
 
+  const [clientSuggestions, setClientSuggestions] = React.useState([]);
+  const [showSuggestions,   setShowSuggestions]   = React.useState(false);
+  const clientRef = React.useRef(null);
+
   React.useEffect(() => {
     fetchExportPresets().then(setPresets).catch(() => {});
     fetchCollaborators()
@@ -66,6 +70,31 @@ function Reports() {
     }, 400);
     return () => clearTimeout(t);
   }, [from, to, colab, cliente, minAmount, maxAmount]);
+
+  React.useEffect(() => {
+    const t = setTimeout(() => {
+      if (cliente.trim().length >= 2) {
+        fetchClients(cliente).then(res => {
+          setClientSuggestions(Array.isArray(res) ? res : []);
+          setShowSuggestions(true);
+        }).catch(() => {});
+      } else {
+        setClientSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }, 250);
+    return () => clearTimeout(t);
+  }, [cliente]);
+
+  React.useEffect(() => {
+    function onClickOutside(e) {
+      if (clientRef.current && !clientRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
 
   function toggleField(key) {
     setFields(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
@@ -123,9 +152,16 @@ function Reports() {
         {/* ── Columna izquierda: configuración ── */}
         <div style={{display:"flex", flexDirection:"column", gap:14}}>
 
-          {presets.length > 0 && (
-            <div className="card" style={{padding:16}}>
-              <div className="card-title" style={{marginBottom:10, fontSize:13}}>Configuraciones guardadas</div>
+          <div className="card" style={{padding:16}}>
+            <div className="row between" style={{marginBottom: presets.length ? 10 : 0}}>
+              <div className="card-title" style={{fontSize:13}}>Configuraciones guardadas</div>
+              <button className="btn ghost" style={{fontSize:11, padding:"3px 10px"}} onClick={() => setSaveModal(true)}>
+                + Guardar actual
+              </button>
+            </div>
+            {presets.length === 0 ? (
+              <div className="muted tiny" style={{padding:"6px 0"}}>Ninguna guardada aún — configurá los filtros y presioná "+ Guardar actual".</div>
+            ) : (
               <div style={{display:"flex", flexDirection:"column", gap:6}}>
                 {presets.map(p => (
                   <div key={p.id} className="row between" style={{padding:"8px 10px", background:"var(--bg-soft)", borderRadius:"var(--radius-sm)", border:"1px solid var(--border)"}}>
@@ -142,8 +178,8 @@ function Reports() {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           <div className="card" style={{padding:18}}>
             <div className="card-title" style={{fontSize:13, marginBottom:12}}>1 · Filtros</div>
@@ -172,9 +208,24 @@ function Reports() {
                   {collabs.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                 </select>
               </div>
-              <div className="field">
-                <label className="field-label">Cliente (contiene)</label>
-                <input className="input" type="text" value={cliente} onChange={e=>setCliente(e.target.value)} placeholder="Nombre…"/>
+              <div className="field" style={{position:"relative"}} ref={clientRef}>
+                <label className="field-label">Cliente</label>
+                <input className="input" type="text" value={cliente}
+                  onChange={e => { setCliente(e.target.value); }}
+                  onFocus={() => { if (clientSuggestions.length) setShowSuggestions(true); }}
+                  placeholder="Buscar cliente…"
+                  autoComplete="off"/>
+                {showSuggestions && clientSuggestions.length > 0 && (
+                  <div style={{position:"absolute", top:"100%", left:0, right:0, zIndex:20, background:"var(--surface)", border:"1px solid var(--border)", borderRadius:"var(--radius-sm)", boxShadow:"0 4px 12px rgba(0,0,0,0.1)", marginTop:2, maxHeight:200, overflowY:"auto"}}>
+                    {clientSuggestions.map(c => (
+                      <button key={c.name} onMouseDown={e => { e.preventDefault(); setCliente(c.name); setShowSuggestions(false); }}
+                        style={{display:"flex", justifyContent:"space-between", alignItems:"center", width:"100%", padding:"8px 12px", background:"none", border:"none", cursor:"pointer", textAlign:"left", fontSize:13, color:"var(--text)"}}>
+                        <span>{c.name}</span>
+                        <span className="muted tiny">{c.txCount} tx</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             <div className="grid grid-2" style={{gap:10}}>
@@ -226,9 +277,6 @@ function Reports() {
               <button className="btn primary" onClick={handleDownload} disabled={loading || !fields.length}
                 style={{flex:1, justifyContent:"center", padding:"10px 14px", fontSize:14, opacity: loading ? 0.7 : 1}}>
                 <I.Download width="14" height="14"/> {loading ? "Generando…" : "Descargar reporte"}
-              </button>
-              <button className="btn" onClick={() => setSaveModal(true)} title="Guardar configuración">
-                <I.Settings width="14" height="14"/> Guardar
               </button>
             </div>
           </div>

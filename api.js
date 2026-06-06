@@ -105,6 +105,11 @@ export async function fetchCollaborators() {
   return apiJSON("/collaborators");
 }
 
+export async function fetchClients(q) {
+  if (!q || !q.trim()) return [];
+  return apiJSON(`/clients?q=${encodeURIComponent(q.trim())}`);
+}
+
 export async function createCollaborator({ name, basePct, status }) {
   return apiJSON("/collaborators", {
     method: "POST",
