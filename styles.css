@@ -1115,41 +1115,23 @@ body {
 }
 
 @media (max-width: 900px) {
-  /* Full-height container: viewport minus topbar (57px) minus bottom tab bar (60px) */
-  .inbox-content { height: calc(100vh - 57px - 60px); padding: 0; }
+  /* Full-height container: viewport minus topbar (73px) and bottom tab bar (60px) */
+  .inbox-content { height: calc(100vh - 73px - 60px); padding: 0; }
 
-  /* Shell becomes a plain block — one panel fills the full height */
-  .inbox-shell-3 {
-    display: block;
-    height: 100%;
-  }
+  /* Shell is a block — JS inline styles control which panel is visible */
+  .inbox-shell-3 { display: block; height: 100%; }
 
-  /* All panels hidden by default */
+  /* On mobile each panel fills the full shell height */
   .inbox-list,
   .inbox-thread-panel,
   .inbox-detail-panel {
-    display: none;
     height: 100%;
     border-right: none;
     border-bottom: none;
   }
 
-  /* Only the active panel is shown */
-  .inbox-list.mobile-active,
-  .inbox-thread-panel.mobile-active,
-  .inbox-detail-panel.mobile-active {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-  }
-
-  /* Detail panel scrolls internally */
-  .inbox-detail-panel.mobile-active { overflow-y: auto; }
-
-  /* Back button visible on mobile */
+  /* Back button and mobile detail header shown on mobile */
   .inbox-back { display: flex; }
-
-  /* Mobile detail header shown */
   .inbox-detail-mobile-header { display: flex; }
 
   /* Compact headers */

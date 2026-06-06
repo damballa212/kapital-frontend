@@ -3,8 +3,18 @@ import React from 'react'
 import { I } from '../icons.jsx'
 import { fetchConversations, fetchWebhookMessages, fetchWebhookMessage, fmtDate } from '../api.js'
 
-// On mobile (≤900px) only one panel is visible at a time.
-// mobilePanel drives which one: 'list' | 'thread' | 'detail'
+function useIsMobile() {
+  const [mobile, setMobile] = React.useState(
+    () => window.matchMedia('(max-width: 900px)').matches
+  )
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 900px)')
+    const handler = e => setMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+  return mobile
+}
 
 const STATUS_META = {
   received:            { label: "Recibido",      tone: "" },
@@ -241,6 +251,13 @@ function BotWhatsApp({ rtKeys }) {
 
   // Mobile navigation: which panel is currently visible
   const [mobilePanel, setMobilePanel] = React.useState('list')
+  const isMobile = useIsMobile()
+
+  // Inline styles that hide non-active panels on mobile (guaranteed to override CSS)
+  const hide = { display: 'none' }
+  const listStyle   = isMobile && mobilePanel !== 'list'   ? hide : undefined
+  const threadStyle = isMobile && mobilePanel !== 'thread' ? hide : undefined
+  const detailStyle = isMobile && mobilePanel !== 'detail' ? hide : undefined
 
   // Load conversations
   React.useEffect(() => {
@@ -276,7 +293,7 @@ function BotWhatsApp({ rtKeys }) {
       <div className="inbox-shell-3">
 
         {/* ── Panel 1: Contacts ── */}
-        <aside className={`inbox-list ${mobilePanel === 'list' ? 'mobile-active' : ''}`}>
+        <aside className="inbox-list" style={listStyle}>
           <div className="inbox-toolbar">
             <div className="input inbox-search">
               <I.Search width="13" height="13"/>
@@ -309,7 +326,7 @@ function BotWhatsApp({ rtKeys }) {
         </aside>
 
         {/* ── Panel 2: Thread ── */}
-        <section className={`inbox-thread-panel ${mobilePanel === 'thread' ? 'mobile-active' : ''}`}>
+        <section className="inbox-thread-panel" style={threadStyle}>
           {!selectedConv ? (
             <div className="inbox-empty">
               <I.WhatsApp width="28" height="28"/>
@@ -343,7 +360,7 @@ function BotWhatsApp({ rtKeys }) {
         </section>
 
         {/* ── Panel 3: Detail ── */}
-        <section className={`inbox-detail-panel ${mobilePanel === 'detail' ? 'mobile-active' : ''}`}>
+        <section className="inbox-detail-panel" style={detailStyle}>
           <div className="inbox-detail-mobile-header">
             <button className="inbox-back" onClick={() => setMobilePanel('thread')} title="Volver al chat">
               <I.ChevronLeft width="18" height="18"/>
