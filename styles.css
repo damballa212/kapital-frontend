@@ -48,7 +48,7 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; overflow-x: hidden; }
+html, body { margin: 0; padding: 0; overflow-x: clip; }
 body {
   font-family: var(--font-sans);
   background: var(--bg);
@@ -76,13 +76,10 @@ body {
   flex-direction: column;
   padding: 18px 14px;
   gap: 22px;
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 0;
-  width: 240px;
   height: 100vh;
   overflow-y: auto;
-  z-index: 10;
 }
 .brand {
   display: flex;
