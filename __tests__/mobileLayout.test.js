@@ -82,13 +82,17 @@ describe('mobile layout safeguards', () => {
     expect(workflow).toContain('VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}')
   })
 
-  it('uses the Kapital logo asset in the shell and login branding', () => {
+  it('uses vector Kapital branding in the shell and login branding', () => {
     const app = read('app.jsx')
     const login = read('screens/login.jsx')
-    expect(app).toContain('src="/kapital-logo-transparent-v2.png"')
+    const brand = read('kapital-brand.jsx')
+    expect(app).toContain("import KapitalBrand from './kapital-brand.jsx'")
+    expect(app).toContain('<KapitalBrand')
     expect(app).toContain('brand-logo-loading')
-    expect(login).toContain('src="/kapital-logo-transparent-v2.png"')
-    expect(css).toContain('.brand-logo')
+    expect(login).toContain("import KapitalBrand from '../kapital-brand.jsx'")
+    expect(login).toContain('<KapitalBrand')
+    expect(brand).toContain('<svg')
+    expect(css).toContain('.kapital-brand')
   })
 
   it('uses mobile-native dashboard layout classes instead of fixed split grids', () => {

@@ -5,6 +5,7 @@ import firebase from './firebase.js'
 import { API_BASE_URL } from './config.js'
 import { I } from './icons.jsx'
 import { useTweaks, TweaksPanel, TweakSection, TweakColor, TweakRadio, TweakToggle, TweakSelect } from './tweaks-panel.jsx'
+import KapitalBrand from './kapital-brand.jsx'
 import Login from './screens/login.jsx'
 import Dashboard from './screens/dashboard.jsx'
 import Transactions from './screens/transactions.jsx'
@@ -58,7 +59,7 @@ function Sidebar({ screen, setScreen, onLogout, user }) {
   return (
     <aside className="sidebar">
       <div className="brand">
-        <img src="/kapital-logo-transparent-v2.png" alt="Kapital" className="brand-logo"/>
+        <KapitalBrand />
         <div className="brand-sub">Casa de cambios</div>
       </div>
 
@@ -233,7 +234,7 @@ function App() {
   if (!authReady) {
     return (
       <div style={{display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", flexDirection:"column", gap:16}}>
-        <img src="/kapital-logo-transparent-v2.png" alt="Kapital" className="brand-logo brand-logo-loading"/>
+        <KapitalBrand className="brand-logo-loading" />
         <div className="muted tiny">Verificando sesión…</div>
       </div>
     );

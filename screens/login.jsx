@@ -2,6 +2,7 @@
 import React from 'react'
 import firebase from '../firebase.js'
 import { I } from '../icons.jsx'
+import KapitalBrand from '../kapital-brand.jsx'
 
 function Login({ onEnter }) {
   const [email, setEmail] = React.useState("");
@@ -46,7 +47,7 @@ function Login({ onEnter }) {
       {/* Art side */}
       <div className="login-art">
         <div className="brand" style={{padding: 0}}>
-          <img src="/kapital-logo-transparent-v2.png" alt="Kapital" className="brand-logo"/>
+          <KapitalBrand />
           <div className="brand-sub">Casa de cambios · Paraguay</div>
         </div>
 
