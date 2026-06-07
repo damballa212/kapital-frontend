@@ -164,12 +164,34 @@ function App() {
   const [theme, setTheme] = React.useState(() => localStorage.getItem("kontigo-theme") || "dark");
   const [user, setUser] = React.useState(null);
   const [authReady, setAuthReady] = React.useState(false);
+  const [accessDenied, setAccessDenied] = React.useState(false);
   const [screen, setScreen] = React.useState(tweaks.startScreen || "dashboard");
   const [rtKeys, setRtKeys] = React.useState({ tx: 0, rate: 0, webhook: 0 });
 
   React.useEffect(() => {
-    const unsub = firebase.auth().onAuthStateChanged(u => {
-      setUser(u || false);
+    const unsub = firebase.auth().onAuthStateChanged(async (u) => {
+      if (!u) {
+        setUser(false);
+        setAuthReady(true);
+        return;
+      }
+      try {
+        const token = await u.getIdToken();
+        const res = await fetch(`${API_BASE_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.status === 403) {
+          setAccessDenied(true);
+          setUser(false);
+          setAuthReady(true);
+          return;
+        }
+        setUser(u);
+        setAccessDenied(false);
+      } catch {
+        // Error de red / servidor caído — dejar pasar para no bloquear a usuarios válidos
+        setUser(u);
+      }
       setAuthReady(true);
     });
     return unsub;
@@ -227,6 +249,7 @@ function App() {
   }, [user]);
 
   async function handleLogout() {
+    setAccessDenied(false);
     await firebase.auth().signOut();
     setUser(false);
   }
@@ -244,6 +267,24 @@ function App() {
       <div style={{display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", flexDirection:"column", gap:16}}>
         <KapitalBrand className="brand-logo-loading" />
         <div className="muted tiny">Verificando sesión…</div>
+      </div>
+    );
+  }
+
+  if (accessDenied) {
+    return (
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",flexDirection:"column",gap:20,padding:24}}>
+        <KapitalBrand />
+        <div style={{textAlign:"center",maxWidth:360}}>
+          <div style={{fontSize:18,fontWeight:600,marginBottom:8}}>Sin acceso</div>
+          <div className="muted" style={{fontSize:13,lineHeight:1.6}}>
+            Tu cuenta no está autorizada para usar esta aplicación.
+            Contactá a Gabriel para solicitar acceso.
+          </div>
+        </div>
+        <button className="btn" onClick={handleLogout} style={{marginTop:8}}>
+          Cerrar sesión
+        </button>
       </div>
     );
   }
