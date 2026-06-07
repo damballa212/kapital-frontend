@@ -130,20 +130,17 @@ function ThreadMessage({ message, active, onSelect }) {
         <div className="chat-bubble-time">{time}</div>
       </div>
 
-      {/* Outgoing: bot's response preview (right) */}
-      {message.responseText ? (
-        <div className={`chat-bubble outgoing ${isError ? "unsent" : ""}`}>
+      {/* Outgoing: bot's response preview (right) — hidden for errors, detail panel shows full info */}
+      {!isError && message.responseText && (
+        <div className="chat-bubble outgoing">
           <div className="chat-bubble-text">{message.responseText.split('\n')[0]}</div>
-          <div className="chat-bubble-time">
-            {isError ? "⚠ no enviado" : "enviado"}
-          </div>
+          <div className="chat-bubble-time">enviado</div>
         </div>
-      ) : (
-        message.parsedType && (
-          <div className="chat-bubble outgoing unsent">
-            <div className="chat-bubble-text muted tiny">Sin respuesta registrada</div>
-          </div>
-        )
+      )}
+      {!isError && !message.responseText && message.parsedType && (
+        <div className="chat-bubble outgoing unsent">
+          <div className="chat-bubble-text muted tiny">Sin respuesta registrada</div>
+        </div>
       )}
 
       <div className="thread-item-tags">
@@ -248,9 +245,17 @@ function BotWhatsApp({ rtKeys }) {
   const [messages, setMessages] = React.useState([])
   const [msgsLoading, setMsgsLoading] = React.useState(false)
 
+  const [msgsPage, setMsgsPage] = React.useState(1)
+  const [msgsTotalPages, setMsgsTotalPages] = React.useState(1)
+  const [moreLoading, setMoreLoading] = React.useState(false)
+
   const [selectedMsg, setSelectedMsg] = React.useState(null)
   const [detail, setDetail] = React.useState(null)
   const [detailLoading, setDetailLoading] = React.useState(false)
+
+  const threadScrollRef = React.useRef(null)
+  const prevScrollHeightRef = React.useRef(null)
+  const isLoadingMoreRef = React.useRef(false)
 
   // Mobile navigation: which panel is currently visible
   const [mobilePanel, setMobilePanel] = React.useState('list')
@@ -271,14 +276,35 @@ function BotWhatsApp({ rtKeys }) {
       .finally(() => setConvsLoading(false))
   }, [q, refreshKey, rtKeys?.webhook])
 
-  // Load messages for selected conversation
+  // Load messages for selected conversation (first page, most recent)
   React.useEffect(() => {
     if (!selectedConv) return
-    setMsgsLoading(true); setMessages([]); setSelectedMsg(null); setDetail(null)
-    fetchWebhookMessages({ chatId: selectedConv.chatId, limit: 100, startDate: sevenDaysAgo, endDate: today })
-      .then(res => setMessages(res.data || []))
+    isLoadingMoreRef.current = false
+    setMsgsLoading(true); setMessages([]); setMsgsPage(1); setMsgsTotalPages(1)
+    setSelectedMsg(null); setDetail(null)
+    fetchWebhookMessages({ chatId: selectedConv.chatId, limit: 30, page: 1, startDate: sevenDaysAgo, endDate: today })
+      .then(res => {
+        setMessages(res.data || [])
+        setMsgsTotalPages(res.pagination?.totalPages ?? 1)
+      })
       .finally(() => setMsgsLoading(false))
   }, [selectedConv?.chatId, refreshKey, rtKeys?.webhook])
+
+  // Scroll to bottom on initial load
+  React.useEffect(() => {
+    if (!msgsLoading && !isLoadingMoreRef.current && threadScrollRef.current) {
+      threadScrollRef.current.scrollTop = threadScrollRef.current.scrollHeight
+    }
+  }, [msgsLoading])
+
+  // Restore scroll position after loading older messages
+  React.useLayoutEffect(() => {
+    if (prevScrollHeightRef.current !== null && threadScrollRef.current) {
+      threadScrollRef.current.scrollTop = threadScrollRef.current.scrollHeight - prevScrollHeightRef.current
+      prevScrollHeightRef.current = null
+      isLoadingMoreRef.current = false
+    }
+  }, [messages])
 
   // Load detail for selected message
   React.useEffect(() => {
@@ -288,6 +314,21 @@ function BotWhatsApp({ rtKeys }) {
       .then(setDetail)
       .finally(() => setDetailLoading(false))
   }, [selectedMsg?.id])
+
+  function loadMoreMessages() {
+    if (moreLoading || msgsPage >= msgsTotalPages || !selectedConv) return
+    isLoadingMoreRef.current = true
+    prevScrollHeightRef.current = threadScrollRef.current?.scrollHeight ?? 0
+    const nextPage = msgsPage + 1
+    setMoreLoading(true)
+    fetchWebhookMessages({ chatId: selectedConv.chatId, limit: 30, page: nextPage, startDate: sevenDaysAgo, endDate: today })
+      .then(res => {
+        setMessages(prev => [...prev, ...(res.data || [])])
+        setMsgsPage(nextPage)
+        setMsgsTotalPages(res.pagination?.totalPages ?? msgsTotalPages)
+      })
+      .finally(() => setMoreLoading(false))
+  }
 
   const setupRequired = /pendiente de migracion|503/.test(convsError || "")
 
@@ -347,8 +388,15 @@ function BotWhatsApp({ rtKeys }) {
                   <div className="muted tiny mono">{formatPhone(selectedConv.chatId)}</div>
                 </div>
               </div>
-              <div className="inbox-thread-scroll">
+              <div className="inbox-thread-scroll" ref={threadScrollRef}>
                 {msgsLoading && <div className="inbox-empty" style={{padding:24}}>Cargando…</div>}
+                {!msgsLoading && msgsPage < msgsTotalPages && (
+                  <div style={{textAlign:'center', padding:'8px 0 4px'}}>
+                    <button className="btn ghost" style={{fontSize:12}} onClick={loadMoreMessages} disabled={moreLoading}>
+                      {moreLoading ? 'Cargando…' : 'Mostrar mensajes anteriores'}
+                    </button>
+                  </div>
+                )}
                 {!msgsLoading && messages.slice().reverse().map(m => (
                   <ThreadMessage
                     key={m.id}
