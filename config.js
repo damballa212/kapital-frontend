@@ -23,3 +23,6 @@ if (!apiBaseUrl) {
 }
 
 export const API_BASE_URL = apiBaseUrl;
+
+export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://vyqnflirugunbkjqywxr.supabase.co'
+export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
