@@ -12,14 +12,13 @@ export function fmtGs(n) {
   return Number(n).toLocaleString("es-PY").replaceAll(",", ".");
 }
 export function fmtNum(n) { return Number(n).toLocaleString("en-US"); }
+const TZ = "America/Asuncion";
 export function fmtTime(iso) {
-  return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+  return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: TZ });
 }
 export function fmtDate(iso, withTime = false) {
   const d = new Date(iso);
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yy = d.getFullYear();
+  const [mm, dd, yy] = d.toLocaleDateString("en-US", { timeZone: TZ, month: "2-digit", day: "2-digit", year: "numeric" }).split("/");
   if (!withTime) return `${dd}/${mm}/${yy}`;
   return `${dd}/${mm}/${yy} · ${fmtTime(iso)}`;
 }
