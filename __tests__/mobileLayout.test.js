@@ -85,9 +85,9 @@ describe('mobile layout safeguards', () => {
   it('uses the Kapital logo asset in the shell and login branding', () => {
     const app = read('app.jsx')
     const login = read('screens/login.jsx')
-    expect(app).toContain('src="/kapital-logo.png"')
+    expect(app).toContain('src="/kapital-logo-transparent-v2.png"')
     expect(app).toContain('brand-logo-loading')
-    expect(login).toContain('src="/kapital-logo.png"')
+    expect(login).toContain('src="/kapital-logo-transparent-v2.png"')
     expect(css).toContain('.brand-logo')
   })
 
