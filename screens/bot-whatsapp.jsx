@@ -220,7 +220,9 @@ function MessageDetail({ message, detail, loading }) {
       {message.errorMessage && (
         <div className="msg-detail-error">
           {message.errorMessage.includes("Evolution API")
-            ? "No se pudo enviar la respuesta por WhatsApp. La transacción sí quedó registrada."
+            ? message.parsedType === 'TRANSACCION'
+              ? "No se pudo enviar la confirmación por WhatsApp. La transacción sí quedó registrada."
+              : "No se pudo enviar la respuesta por WhatsApp."
             : message.errorMessage}
         </div>
       )}
