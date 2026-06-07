@@ -1,7 +1,7 @@
 // ===== Kapital · Transactions screen =====
 import React from 'react'
 import { I } from '../icons.jsx'
-import { fetchTransactions, fetchCollaborators, mapTransaction, deleteTransaction, fmtUSD as fU, fmtGs as fG, fmtDate as fD } from '../api.js'
+import { fetchTransactions, fetchCollaborators, mapTransaction, deleteTransaction, fmtUSD as fU, fmtGs as fG, fmtDate as fD, fmtTime } from '../api.js'
 
 function TxDetail({ tx, onClose, onDelete }) {
   const [confirming, setConfirming] = React.useState(false);
@@ -276,7 +276,7 @@ function Transactions({ rtKeys }) {
                 <tr key={t.id} onClick={() => setSelected(t)}>
                   <td className="tx-col-date">
                     <div className="mono tnum tiny">{fD(t.fecha)}</div>
-                    <div className="muted tiny mono">{new Date(t.fecha).toTimeString().slice(0,5)}</div>
+                    <div className="muted tiny mono">{fmtTime(t.fecha)}</div>
                   </td>
                   <td className="tx-col-client" style={{fontWeight:500}}>{t.cliente}</td>
                   <td className="tx-col-collab">

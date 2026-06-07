@@ -1,7 +1,7 @@
 // ===== Kontigo · WhatsApp inbox =====
 import React from 'react'
 import { I } from '../icons.jsx'
-import { fetchConversations, fetchWebhookMessages, fetchWebhookMessage, fmtDate } from '../api.js'
+import { fetchConversations, fetchWebhookMessages, fetchWebhookMessage, fmtDate, fmtTime } from '../api.js'
 
 function useIsMobile() {
   const [mobile, setMobile] = React.useState(
@@ -50,6 +50,7 @@ const STAGE_LABELS = {
   yo_sent:             { text: "Resumen enviado",                     ok: true },
   confirmation_sent:   { text: "Confirmación enviada por WhatsApp",   ok: true },
   confirmation_failed: { text: "No se pudo enviar por WhatsApp",      ok: false },
+  yo_not_found:        { text: "Colaborador no identificado",         ok: false },
   failed:              { text: "Error al procesar",                   ok: false },
 }
 
@@ -93,7 +94,7 @@ function statusBadge(status) {
 // ─── Panel 1: Contact list ────────────────────────────────────────────────
 
 function ConversationRow({ conv, active, onSelect }) {
-  const time = new Date(conv.lastActivity).toTimeString().slice(0, 5)
+  const time = fmtTime(conv.lastActivity)
   const name = conv.userName || formatPhone(conv.chatId)
 
   return (
@@ -118,7 +119,7 @@ function ConversationRow({ conv, active, onSelect }) {
 // ─── Panel 2: Message thread ──────────────────────────────────────────────
 
 function ThreadMessage({ message, active, onSelect }) {
-  const time = new Date(message.receivedAt).toTimeString().slice(0, 5)
+  const time = fmtTime(message.receivedAt)
   const isError = ["failed", "confirmation_failed", "parse_error", "rate_limited"].includes(message.status)
 
   return (
@@ -196,7 +197,7 @@ function MessageDetail({ message, detail, loading }) {
               </div>
               <div className="msg-timeline-body">
                 <span className="msg-timeline-text">{label.text}</span>
-                <span className="msg-timeline-time">{new Date(ev.createdAt).toTimeString().slice(0, 5)}</span>
+                <span className="msg-timeline-time">{fmtTime(ev.createdAt)}</span>
               </div>
             </div>
           )

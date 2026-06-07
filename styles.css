@@ -902,17 +902,18 @@ body {
   align-self: flex-start;
 }
 .chat-bubble.outgoing {
-  background: var(--accent-dim);
+  background: #1A5C38;
   border: 1px solid transparent;
   border-bottom-right-radius: 4px;
   align-self: flex-end;
-  color: var(--text);
+  color: #ffffff;
 }
 .chat-bubble.outgoing.unsent {
   opacity: 0.55;
   border-style: dashed;
   border-color: var(--border);
   background: transparent;
+  color: var(--text);
 }
 .chat-bubble-text { white-space: pre-wrap; }
 .chat-bubble-time {
@@ -921,6 +922,8 @@ body {
   margin-top: 4px;
   text-align: right;
 }
+.chat-bubble.outgoing .chat-bubble-time { color: rgba(255,255,255,0.55); }
+.chat-bubble.outgoing.unsent .chat-bubble-time { color: var(--text-dim); }
 
 /* ─── Panel 3: Message detail ──────────────────────────────── */
 .inbox-detail-panel {
