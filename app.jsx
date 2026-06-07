@@ -58,11 +58,8 @@ function Sidebar({ screen, setScreen, onLogout, user }) {
   return (
     <aside className="sidebar">
       <div className="brand">
-        <span className="brand-mark">K</span>
-        <div>
-          <div className="brand-name">Kapital</div>
-          <div className="brand-sub">Casa de cambios</div>
-        </div>
+        <img src="/kapital-logo.png" alt="Kapital" className="brand-logo"/>
+        <div className="brand-sub">Casa de cambios</div>
       </div>
 
       <nav className="nav">
@@ -236,7 +233,7 @@ function App() {
   if (!authReady) {
     return (
       <div style={{display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", flexDirection:"column", gap:16}}>
-        <div className="brand-mark" style={{width:48, height:48, fontSize:24}}>K</div>
+        <img src="/kapital-logo.png" alt="Kapital" className="brand-logo brand-logo-loading"/>
         <div className="muted tiny">Verificando sesión…</div>
       </div>
     );

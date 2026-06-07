@@ -46,11 +46,8 @@ function Login({ onEnter }) {
       {/* Art side */}
       <div className="login-art">
         <div className="brand" style={{padding: 0}}>
-          <span className="brand-mark">K</span>
-          <div>
-            <div className="brand-name">Kapital</div>
-            <div className="brand-sub">Casa de cambios · Paraguay</div>
-          </div>
+          <img src="/kapital-logo.png" alt="Kapital" className="brand-logo"/>
+          <div className="brand-sub">Casa de cambios · Paraguay</div>
         </div>
 
         <div style={{position:"relative", zIndex:1}}>

@@ -58,8 +58,8 @@ describe('mobile layout safeguards', () => {
 
   it('labels HOY and YO WhatsApp command types in the inbox', () => {
     const bot = read('screens/bot-whatsapp.jsx')
-    expect(bot).toContain('HOY: "Resumen hoy"')
-    expect(bot).toContain('YO: "Resumen yo"')
+    expect(bot).toMatch(/HOY:\s*"Resumen hoy"/)
+    expect(bot).toMatch(/YO:\s*"Resumen yo"/)
   })
 
   it('keeps Firebase production config as a fallback when CI secrets are absent', () => {
@@ -80,6 +80,15 @@ describe('mobile layout safeguards', () => {
     const workflow = read('.github/workflows/deploy.yml')
     expect(workflow).toContain('VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}')
     expect(workflow).toContain('VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}')
+  })
+
+  it('uses the Kapital logo asset in the shell and login branding', () => {
+    const app = read('app.jsx')
+    const login = read('screens/login.jsx')
+    expect(app).toContain('src="/kapital-logo.png"')
+    expect(app).toContain('brand-logo-loading')
+    expect(login).toContain('src="/kapital-logo.png"')
+    expect(css).toContain('.brand-logo')
   })
 
   it('uses mobile-native dashboard layout classes instead of fixed split grids', () => {
