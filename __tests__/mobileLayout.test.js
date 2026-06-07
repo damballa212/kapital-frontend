@@ -82,7 +82,7 @@ describe('mobile layout safeguards', () => {
     expect(workflow).toContain('VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}')
   })
 
-  it('uses vector Kapital branding in the shell and login branding', () => {
+  it('uses the real Kapital logo asset through shared branding', () => {
     const app = read('app.jsx')
     const login = read('screens/login.jsx')
     const brand = read('kapital-brand.jsx')
@@ -91,7 +91,8 @@ describe('mobile layout safeguards', () => {
     expect(app).toContain('brand-logo-loading')
     expect(login).toContain("import KapitalBrand from '../kapital-brand.jsx'")
     expect(login).toContain('<KapitalBrand')
-    expect(brand).toContain('<svg')
+    expect(brand).toContain('src="/kapital-logo-transparent-v2.png"')
+    expect(brand).not.toContain('<svg')
     expect(css).toContain('.kapital-brand')
   })
 

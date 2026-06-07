@@ -89,42 +89,14 @@ body {
   padding: 8px 8px 4px;
 }
 .kapital-brand {
-  --logo-ink: #dce3df;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   width: 104px;
   max-width: 100%;
-  gap: 5px;
-}
-[data-theme="light"] .kapital-brand { --logo-ink: #263238; }
-.kapital-mark {
-  width: 58px;
-  height: 58px;
   display: block;
-  overflow: visible;
-}
-.kapital-mark-ink { fill: var(--logo-ink); }
-.kapital-mark-accent { fill: var(--accent); }
-.kapital-wordmark {
-  color: var(--logo-ink);
-  font-size: 20px;
-  font-weight: 750;
-  line-height: 1;
+  height: auto;
 }
 .brand-logo-loading { width: 122px; }
-.brand-logo-loading .kapital-mark {
-  width: 68px;
-  height: 68px;
-}
-.brand-logo-loading .kapital-wordmark { font-size: 24px; }
 .login-art .brand { gap: 8px; }
 .login-art .kapital-brand { width: 116px; }
-.login-art .kapital-mark {
-  width: 64px;
-  height: 64px;
-}
-.login-art .kapital-wordmark { font-size: 22px; }
 .brand-sub { font-size: 10px; color: var(--text-dim); padding-left: 2px; letter-spacing: 0.05em; text-transform: uppercase; }
 
 .nav { display: flex; flex-direction: column; gap: 2px; }
