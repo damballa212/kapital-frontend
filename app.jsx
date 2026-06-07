@@ -2,7 +2,10 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import firebase from './firebase.js'
-import { API_BASE_URL } from './config.js'
+import { API_BASE_URL, SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 import { I } from './icons.jsx'
 import { useTweaks, TweaksPanel, TweakSection, TweakColor, TweakRadio, TweakToggle, TweakSelect } from './tweaks-panel.jsx'
 import KapitalBrand from './kapital-brand.jsx'
@@ -210,42 +213,20 @@ function App() {
 
   React.useEffect(() => {
     if (!user) return;
-    let es = null;
-    let retryTimer = null;
 
-    async function connect() {
-      try {
-        const token = await user.getIdToken();
-        const sessionRes = await fetch(`${API_BASE_URL}/realtime/session`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (!sessionRes.ok) throw new Error(`SSE session ${sessionRes.status}`);
-        const session = await sessionRes.json();
-        es = new EventSource(`${API_BASE_URL}/realtime/events?token=${encodeURIComponent(session.token)}`);
-        es.onmessage = (e) => {
-          try {
-            const ev = JSON.parse(e.data);
-            if (ev.type === 'transaction.created' || ev.type === 'transaction.deleted') {
-              setRtKeys(k => ({ ...k, tx: k.tx + 1 }));
-            } else if (ev.type === 'rate.updated') {
-              setRtKeys(k => ({ ...k, rate: k.rate + 1 }));
-            } else if (ev.type.startsWith('webhook.')) {
-              setRtKeys(k => ({ ...k, webhook: k.webhook + 1 }));
-            }
-          } catch {}
-        };
-        es.onerror = () => {
-          es?.close();
-          retryTimer = setTimeout(connect, 5000);
-        };
-      } catch {}
-    }
+    const channel = supabase.channel('kapital')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
+        setRtKeys(k => ({ ...k, tx: k.tx + 1 }));
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'global_rate' }, () => {
+        setRtKeys(k => ({ ...k, rate: k.rate + 1 }));
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'whatsapp_inbound_messages' }, () => {
+        setRtKeys(k => ({ ...k, webhook: k.webhook + 1 }));
+      })
+      .subscribe();
 
-    connect();
-    return () => { es?.close(); clearTimeout(retryTimer); };
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   async function handleLogout() {
