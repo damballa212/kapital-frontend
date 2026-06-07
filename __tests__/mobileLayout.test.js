@@ -70,10 +70,12 @@ describe('mobile layout safeguards', () => {
     expect(config).toMatch(/VITE_FIREBASE_API_KEY\s*\|\|\s*FIREBASE_HOSTING_CONFIG\.apiKey/)
   })
 
-  it('fails API calls explicitly when VITE_API_BASE_URL is missing', () => {
+  it('fails fast in config when VITE_API_BASE_URL is missing', () => {
+    const config = read('config.js')
     const api = read('api.js')
-    expect(api).toContain('Falta configurar VITE_API_BASE_URL')
-    expect(api).toMatch(/if\s*\(!API_BASE_URL\)/)
+    expect(config).toContain('Falta configurar VITE_API_BASE_URL')
+    expect(config).toMatch(/if\s*\(!apiBaseUrl\)/)
+    expect(api).not.toMatch(/if\s*\(!API_BASE_URL\)/)
   })
 
   it('passes Vite build env values through the deploy workflow', () => {

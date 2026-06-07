@@ -16,4 +16,10 @@ export const FIREBASE_CONFIG = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || FIREBASE_HOSTING_CONFIG.appId,
 };
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() || "";
+
+if (!apiBaseUrl) {
+  throw new Error("Falta configurar VITE_API_BASE_URL en el build del frontend");
+}
+
+export const API_BASE_URL = apiBaseUrl;

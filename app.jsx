@@ -194,7 +194,15 @@ function App() {
     async function connect() {
       try {
         const token = await user.getIdToken();
-        es = new EventSource(`${API_BASE_URL}/realtime/events?token=${encodeURIComponent(token)}`);
+        const sessionRes = await fetch(`${API_BASE_URL}/realtime/session`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!sessionRes.ok) throw new Error(`SSE session ${sessionRes.status}`);
+        const session = await sessionRes.json();
+        es = new EventSource(`${API_BASE_URL}/realtime/events?token=${encodeURIComponent(session.token)}`);
         es.onmessage = (e) => {
           try {
             const ev = JSON.parse(e.data);
