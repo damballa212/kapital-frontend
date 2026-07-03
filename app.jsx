@@ -1,3 +1,5 @@
+import { Sentry } from './sentry.js'
+
 // ===== Kontigo · App shell =====
 import React from 'react'
 import ReactDOM from 'react-dom/client'
@@ -151,6 +153,15 @@ function ToastContainer() {
 class ErrorBoundary extends React.Component {
   state = { error: null }
   static getDerivedStateFromError(error) { return { error } }
+  componentDidCatch(error, errorInfo) {
+    Sentry.captureException(error, {
+      contexts: {
+        react: {
+          componentStack: errorInfo.componentStack,
+        },
+      },
+    })
+  }
   render() {
     if (this.state.error) return (
       <div style={{padding:40, textAlign:"center"}}>
@@ -185,14 +196,17 @@ function App() {
         });
         if (res.status === 403) {
           setAccessDenied(true);
+          Sentry.setUser(null);
           setUser(false);
           setAuthReady(true);
           return;
         }
+        Sentry.setUser({ id: u.uid });
         setUser(u);
         setAccessDenied(false);
       } catch {
         // Error de red / servidor caído — dejar pasar para no bloquear a usuarios válidos
+        Sentry.setUser({ id: u.uid });
         setUser(u);
       }
       setAuthReady(true);
@@ -231,6 +245,7 @@ function App() {
 
   async function handleLogout() {
     setAccessDenied(false);
+    Sentry.setUser(null);
     await firebase.auth().signOut();
     setUser(false);
   }

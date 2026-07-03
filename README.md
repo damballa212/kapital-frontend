@@ -17,6 +17,7 @@ Authentication is handled by Firebase Auth (Google Sign-In). Only whitelisted em
 | Hosting | Azure Static Web Apps (Free tier) |
 | Auth | Firebase Auth (Google Sign-In) |
 | Realtime | Supabase Realtime (Postgres `LISTEN/NOTIFY` via `@supabase/supabase-js`) |
+| Error monitoring | Sentry (`@sentry/react`, optional via `VITE_SENTRY_DSN`) |
 | Tests | Vitest |
 | CI/CD | GitHub Actions → Azure Static Web Apps Deploy action |
 
@@ -85,7 +86,16 @@ VITE_FIREBASE_PROJECT_ID=
 VITE_FIREBASE_STORAGE_BUCKET=
 VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
+
+# Sentry (optional; enabled when DSN is present)
+VITE_SENTRY_DSN=
+VITE_SENTRY_RELEASE=
+VITE_SENTRY_TRACES_SAMPLE_RATE=0
+VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE=0
+VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE=0
 ```
+
+Sentry sends frontend errors to the `kapital-frontend` project. Tracing and Session Replay default to `0` to stay conservative on free-tier usage; raise the sample rates only when actively debugging.
 
 ## Local Development
 
@@ -118,7 +128,9 @@ CI/CD runs on every push to `main` via GitHub Actions:
 2. Build with Vite (`npm run build`) — injects `VITE_*` secrets from GitHub
 3. Deploy `dist/` to Azure Static Web Apps
 
-Required GitHub secrets: `AZURE_STATIC_WEB_APPS_API_TOKEN`, `VITE_API_BASE_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
+Required GitHub secrets: `AZURE_STATIC_WEB_APPS_API_TOKEN`, `VITE_API_BASE_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SENTRY_DSN`.
+
+Optional GitHub secret: `SENTRY_AUTH_TOKEN`. When present, the Vite build uploads hidden source maps to Sentry using org `darks-matter-co` and project `kapital-frontend`. Without it, source map upload is skipped and the build still succeeds.
 
 ## Export Formats
 
