@@ -48,7 +48,7 @@ function Login({ onEnter }) {
       <div className="login-art">
         <div className="brand" style={{padding: 0}}>
           <KapitalBrand />
-          <div className="brand-sub">Casa de cambios · Paraguay</div>
+          <div className="brand-sub">Liquidaciones · Paraguay</div>
         </div>
 
         <div style={{position:"relative", zIndex:1}}>

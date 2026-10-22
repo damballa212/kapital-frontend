@@ -65,7 +65,7 @@ function Sidebar({ screen, setScreen, onLogout, user }) {
     <aside className="sidebar">
       <div className="brand">
         <KapitalBrand />
-        <div className="brand-sub">Casa de cambios</div>
+        <div className="brand-sub">Liquidaciones</div>
       </div>
 
       <nav className="nav">
