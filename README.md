@@ -1,49 +1,80 @@
-# Kapital — Frontend
+# KapitalApp - Frontend
 
-Management dashboard for Kapital, a currency exchange (casa de cambios) operation. Built with React 18 + Vite, deployed on Azure Static Web Apps.
+Internal dashboard for KapitalApp, Gabriel Zambrano's operating ledger for TikTok creator payout/liquidation workflows in Paraguay.
+
+KapitalApp is not a generic currency-exchange dashboard or a public client CRM. It is used internally by authorized operators to review operations that Gabriel Zambrano, as business owner, or an active collaborator registers through WhatsApp after creators withdraw TikTok earnings to PayPal and the value is liquidated through PayPal, Bank of America, Zelle, USDT, or Paraguayan guaranies.
+
+The frontend gives Gabriel visibility into transactions, commissions, rates, collaborator performance, WhatsApp bot processing, and exportable accounting reports.
+
+## Business Context
+
+The supported workflow is:
+
+1. A TikTok creator earns money from live gifts.
+2. The creator withdraws those earnings to PayPal.
+3. Gabriel coordinates liquidity through PayPal, Bank of America, Zelle, USDT, or guaranies.
+4. Gabriel or an active collaborator records the operation in WhatsApp with `#TRANSACCION`.
+5. KapitalApp stores the operation and exposes it in this dashboard for control, review, and accounting exports.
+
+The dashboard is designed for internal operational clarity: what was received, what was delivered, which rate was used, how commissions were calculated, and what needs to be reported to the accountant.
 
 ## Overview
 
-Single-page application consumed exclusively by authorized operators. Provides real-time visibility into transactions, exchange rates, commissions, collaborator performance, and the WhatsApp bot activity log.
+Single-page application consumed exclusively by authorized operators. It provides real-time visibility into:
 
-Authentication is handled by Firebase Auth (Google Sign-In). Only whitelisted email addresses can access the app — the backend enforces this at the API level.
+- Daily and monthly operation volume.
+- Current USD/PYG rate.
+- Transaction history and per-operation commission breakdown.
+- Client and collaborator activity.
+- CSV, Excel, and PDF accounting exports.
+- WhatsApp bot conversations, processing events, and failures.
+
+Authentication is handled by Firebase Auth with Google Sign-In. Only whitelisted email addresses can access the app; the backend enforces this at the API level.
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|------------|
-| Framework | React 18 (no build-time JSX transform — plain Vite + `@vitejs/plugin-react`) |
+| Framework | React 18 |
 | Bundler | Vite 8 |
 | Hosting | Azure Static Web Apps (Free tier) |
 | Auth | Firebase Auth (Google Sign-In) |
-| Realtime | Supabase Realtime (Postgres `LISTEN/NOTIFY` via `@supabase/supabase-js`) |
-| Error monitoring | Sentry (`@sentry/react`, optional via `VITE_SENTRY_DSN`) |
+| Realtime | Supabase Realtime via `@supabase/supabase-js` |
+| Error monitoring | Sentry (`@sentry/react`, enabled via `VITE_SENTRY_DSN`) |
 | Tests | Vitest |
-| CI/CD | GitHub Actions → Azure Static Web Apps Deploy action |
+| CI/CD | GitHub Actions -> Azure Static Web Apps Deploy action |
 
 ## Screens
 
 | Screen | Route key | Description |
 |--------|-----------|-------------|
-| Dashboard | `dashboard` | Today's metrics, monthly KPIs, daily activity bar chart, top clients, collaborator performance table |
-| Transactions | `transactions` | Paginated transaction list with filters; side panel with full commission breakdown per transaction |
-| Reports | `reports` | Export transactions as CSV, Excel, or PDF with field selector, date presets, and saveable filter presets |
-| Bot WhatsApp | `bot` | Three-panel inbox: contacts → message thread → message detail with processing flow timeline |
-| Settings | `settings` | Collaborator management (create, edit, deactivate), allowed users whitelist, rate configuration |
-| Login | — | Google Sign-In; redirects to dashboard on success |
+| Dashboard | `dashboard` | Today metrics, monthly KPIs, daily activity chart, top clients, and collaborator performance |
+| Transactions | `transactions` | Paginated operation list with filters and side panel showing full commission/rate breakdown |
+| Reports | `reports` | Export operations as CSV, Excel, or PDF with field selector, date presets, and saveable presets |
+| Bot WhatsApp | `bot` | Three-panel inbox: contacts, message thread, and processing timeline for every inbound WhatsApp message |
+| Settings | `settings` | Collaborator management, allowed users whitelist, and rate configuration |
+| Login | n/a | Google Sign-In; redirects to dashboard on success |
+
+## Operator Boundaries
+
+- Primary users: Gabriel Zambrano and authorized collaborators/operators.
+- Gabriel is the owner/default operator; collaborators are operational users that can change over time.
+- WhatsApp command users are expected to be Gabriel or currently active collaborators, not end clients.
+- Client-facing negotiation happens outside the app.
+- The dashboard is for internal ledger review, operations monitoring, and accounting exports.
 
 ## Project Structure
 
-```
+```text
 ├── app.jsx             # App shell: auth state, routing, sidebar, realtime subscriptions
-├── api.js              # All API calls to the backend + formatting helpers
+├── api.js              # API calls to the backend + formatting helpers
 ├── config.js           # Reads VITE_* env vars
 ├── firebase.js         # Firebase Auth initialization
 ├── icons.jsx           # SVG icon components
 ├── kapital-brand.jsx   # Logo component
-├── tweaks-panel.jsx    # Developer theming panel (accent color, dark/light mode)
+├── tweaks-panel.jsx    # Developer theming panel
 ├── utils/
-│   └── datePresets.js  # Date range presets (today, this week, this month, etc.)
+│   └── datePresets.js  # Date range presets
 ├── screens/
 │   ├── login.jsx
 │   ├── dashboard.jsx
@@ -51,26 +82,41 @@ Authentication is handled by Firebase Auth (Google Sign-In). Only whitelisted em
 │   ├── reports.jsx
 │   ├── settings.jsx
 │   └── bot-whatsapp.jsx
-└── styles.css          # Single CSS file — design tokens, layout, components
+└── styles.css          # Design tokens, layout, and components
 ```
 
 ## Realtime Updates
 
-The app uses Supabase Realtime to refresh data automatically when the database changes. Three channels are subscribed on login:
+The app uses Supabase Realtime to refresh data automatically when PostgreSQL changes. Three channels are subscribed on login:
 
-- `transactions` table → refreshes Transactions screen and Dashboard
-- `global_rate` table → refreshes Dashboard rate badge
-- `whatsapp_inbound_messages` table → refreshes Bot WhatsApp inbox
+- `transactions` table -> refreshes Transactions and Dashboard.
+- `global_rate` table -> refreshes Dashboard rate badge.
+- `whatsapp_inbound_messages` table -> refreshes Bot WhatsApp inbox.
 
-Each subscription carries a `rtKeys` prop down to screens, which trigger `useEffect` refetches when the key changes.
+Each subscription carries an `rtKeys` prop down to screens, which trigger `useEffect` refetches when the key changes.
 
 ## WhatsApp Bot Monitor
 
-The Bot WhatsApp screen (`bot-whatsapp.jsx`) is a three-panel inbox:
+The Bot WhatsApp screen (`bot-whatsapp.jsx`) is an internal operations inbox:
 
-1. **Contacts panel** — lists all conversations from the last 7 days with message counts, error badges, and success counts.
-2. **Thread panel** — shows up to 30 messages at a time (oldest→newest, auto-scrolled to bottom). "Mostrar mensajes anteriores" button loads older pages without losing scroll position.
-3. **Detail panel** — displays the full message processing timeline (received → parsed → transaction created → confirmation sent/failed) with timestamps and structured details per step.
+1. **Contacts panel** - conversations from the last 7 days with message counts, error badges, and success counts.
+2. **Thread panel** - up to 30 messages at a time, oldest to newest, with stable pagination for older messages.
+3. **Detail panel** - full message processing timeline: received, normalized, parsed, transaction created, confirmation sent, or failure captured.
+
+This screen exists to audit the bot and debug operational failures, not to run customer support chat.
+
+## Transaction Review
+
+Transactions show the operational and accounting details Gabriel needs:
+
+- Client name.
+- Collaborator/operator attribution.
+- USD amount.
+- Commission percentage.
+- USD/PYG rate used.
+- Guaranies delivered.
+- Gabriel and collaborator commission amounts.
+- Original WhatsApp message context when available.
 
 ## Environment Variables
 
@@ -99,14 +145,14 @@ Sentry sends frontend errors to the `kapital-frontend` project. Tracing and Sess
 
 ## Local Development
 
-**Prerequisites:** Node.js 20+, npm, a running instance of the backend API.
+Prerequisites: Node.js 20+, npm, and a running backend API.
 
 ```bash
 # Install dependencies
 npm install
 
 # Copy and fill env
-cp .env.example .env.local  # add your values
+cp .env.example .env.local
 
 # Start dev server
 npm run dev
@@ -116,19 +162,28 @@ npm run dev
 ## Running Tests
 
 ```bash
-npm test          # run once
-npm run test:watch  # watch mode
+npm test
+npm run test:watch
 ```
 
 ## Deployment
 
 CI/CD runs on every push to `main` via GitHub Actions:
 
-1. Install dependencies (`npm ci`)
-2. Build with Vite (`npm run build`) — injects `VITE_*` secrets from GitHub
-3. Deploy `dist/` to Azure Static Web Apps
+1. Install dependencies with `npm ci`.
+2. Build with Vite using GitHub-provided `VITE_*` secrets.
+3. Upload source maps to Sentry when `SENTRY_AUTH_TOKEN` is configured.
+4. Deploy `dist/` to Azure Static Web Apps.
 
-Required GitHub secrets: `AZURE_STATIC_WEB_APPS_API_TOKEN`, `VITE_API_BASE_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SENTRY_DSN`.
+Required GitHub secrets:
+
+- `AZURE_STATIC_WEB_APPS_API_TOKEN`
+- `VITE_API_BASE_URL`
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_SENTRY_DSN`
+
+The workflow also expects Firebase `VITE_FIREBASE_*` secrets for production auth configuration.
 
 Optional GitHub secret: `SENTRY_AUTH_TOKEN`. When present, the Vite build uploads hidden source maps to Sentry using org `darks-matter-co` and project `kapital-frontend`. Without it, source map upload is skipped and the build still succeeds.
 
@@ -139,7 +194,13 @@ Available from the Reports screen:
 | Format | Description |
 |--------|-------------|
 | CSV | Plain text, UTF-8 |
-| Excel | `.xlsx` — Transactions sheet with totals row, Summary sheet, By Collaborator sheet |
-| PDF | A4 landscape — executive summary with KPI cards, collaborator breakdown, paginated transaction detail |
+| Excel | `.xlsx` with Transactions, Summary, and By Collaborator sheets |
+| PDF | A4 landscape report with KPI cards, collaborator breakdown, and paginated transaction detail |
 
 Field selection is configurable per export. Filter presets can be saved and reused.
+
+## Production Monitoring
+
+- Frontend errors are sent to Sentry project `kapital-frontend` when `VITE_SENTRY_DSN` is present.
+- Sentry source maps are uploaded in CI when `SENTRY_AUTH_TOKEN` is configured.
+- Sentry is connected to Linear so new or regressed production errors can create Linear issues automatically.
