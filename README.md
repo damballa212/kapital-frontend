@@ -145,7 +145,7 @@ Sentry sends frontend errors to the `kapital-frontend` project. Tracing and Sess
 
 ## Local Development
 
-Prerequisites: Node.js 20+, npm, and a running backend API.
+Prerequisites: Node.js 24 LTS, npm, and a running backend API.
 
 ```bash
 # Install dependencies
@@ -168,12 +168,23 @@ npm run test:watch
 
 ## Deployment
 
-CI/CD runs on every push to `main` via GitHub Actions:
+Pull requests run `npm ci`, `npm test`, and a Vite build on a standard
+GitHub-hosted Linux runner with Node.js 24. Verification has read-only repository
+permissions, uses a non-routable API URL, and receives no production secrets.
+It produces a compilation check, not a functional preview of production.
+Documentation-only changes are skipped and a newer update to the same PR cancels
+its previous verification. No build artifacts or dependency caches are uploaded.
+
+Production deployment runs on every push to `main` or manual dispatch via GitHub Actions:
 
 1. Install dependencies with `npm ci`.
-2. Build with Vite using GitHub-provided `VITE_*` secrets.
-3. Upload source maps to Sentry when `SENTRY_AUTH_TOKEN` is configured.
-4. Deploy `dist/` to Azure Static Web Apps.
+2. Run the existing test suite with `npm test`; failures stop deployment.
+3. Build with Vite using GitHub-provided `VITE_*` secrets.
+4. Upload source maps to Sentry when `SENTRY_AUTH_TOKEN` is configured.
+5. Deploy `dist/` to Azure Static Web Apps.
+
+Deployment jobs are serialized without cancelling a running deployment and have a
+20-minute timeout. Verification on PRs has a separate 15-minute timeout.
 
 Required GitHub secrets:
 
